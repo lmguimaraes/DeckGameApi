@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DeckGameApi.Core.Entities
 {
@@ -6,5 +7,8 @@ namespace DeckGameApi.Core.Entities
     {
         [Key]
         public int Id { get; set; }
+        [ForeignKey("GameDeck")]
+        public int GameDeckId { get; set; }
+        public List<Card> Cards { get; set; }
     }
 }
