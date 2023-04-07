@@ -1,3 +1,4 @@
+using DeckGameApi.Common.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DeckGameApi.DeckGame.Controllers
@@ -7,10 +8,13 @@ namespace DeckGameApi.DeckGame.Controllers
     public class GameController : ControllerBase
     {
         private readonly ILogger<GameController> _logger;
+        private readonly IDeckGameRepository _deckGameRepository;
 
-        public GameController(ILogger<GameController> logger)
+        public GameController(ILogger<GameController> logger,
+                              IDeckGameRepository deckGameRepository)
         {
             _logger = logger;
+            _deckGameRepository = deckGameRepository;
         }
 
         // GET /game/helloworld
@@ -18,6 +22,12 @@ namespace DeckGameApi.DeckGame.Controllers
         public IActionResult HelloWorld()
         {
             return Ok("Hello World");
+        }
+        // GET /game/decks
+        [HttpGet("decks")]
+        public IActionResult Get()
+        {
+            return Ok(_deckGameRepository.GetDecks());
         }
     }
 }

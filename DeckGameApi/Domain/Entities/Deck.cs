@@ -1,9 +1,12 @@
 ﻿using DeckGameApi.Core.Entities.Enums;
+using System.ComponentModel.DataAnnotations;
 
 namespace DeckGameApi.Core.Entities
 {
     public class Deck
     {
+        [Key]
+        public int Id { get; set; }
         public Deck() => Reset();
 
         public List<Card> Cards { get; set; }
