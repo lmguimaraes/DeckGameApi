@@ -1,8 +1,7 @@
 ﻿using DeckGameApi.Common.Interfaces;
 using DeckGameApi.Domain.Entities;
-using DeckGameApi.Domain.Entities.Enums;
 using Microsoft.EntityFrameworkCore;
-using System.Reflection.Emit;
+
 
 
 namespace DeckGameApi.Infrastrucutre.Persistence.Repositories
@@ -31,22 +30,6 @@ namespace DeckGameApi.Infrastrucutre.Persistence.Repositories
 
         public async Task<Deck> ShuffleGameDeck(int deckId, int gameId)
         {
-            //var gameDeck = await GetGameDeck(gameId);
-            //if (gameDeck == null)
-            //{
-            //    _logger.LogError("GameDeck not found");
-            //    return null;
-            //}
-
-            //var deck = gameDeck.Decks.FirstOrDefault(x => x.Id == deckId);
-
-            //if (deck == null)
-            //{
-            //    _logger.LogError("Deck not found");
-            //    return null;
-            //}
-            //deck.Shuffle();
-            //await _context.SaveChangesAsync();
             var deck = await GetDeck(deckId);
             if (deck is null)
             {
@@ -61,26 +44,20 @@ namespace DeckGameApi.Infrastrucutre.Persistence.Repositories
 
         public async Task<GameDeck> CreateGame()
         {
-
-
             var gameDeck = new GameDeck();
             await _context.GameDecks.AddAsync(gameDeck);
             await _context.SaveChangesAsync();
+            _logger.LogInformation("Game created with ID: {id}", gameDeck.Id);
             return gameDeck;
-
-
         }
 
         public async Task<Player> CreatePlayer()
         {
-
-
             var player = new Player();
             await _context.Players.AddAsync(player);
             await _context.SaveChangesAsync();
+            _logger.LogInformation("Player created with ID: {id}", player.Id);
             return player;
-
-
         }
 
         public async Task DeleteGame(int id)
@@ -89,6 +66,7 @@ namespace DeckGameApi.Infrastrucutre.Persistence.Repositories
             {
                 var gameDeck = _context.GameDecks.Attach(new GameDeck { Id = id });
                 gameDeck.State = EntityState.Deleted;
+                _logger.LogInformation("Game deleted with ID: {id}", gameDeck.Entity.Id);
                 await _context.SaveChangesAsync();
             }
             catch (DbUpdateConcurrencyException e)
@@ -100,8 +78,6 @@ namespace DeckGameApi.Infrastrucutre.Persistence.Repositories
 
         public async Task<GameDeck> AddDeckToGame(int deckId, int gameDeckId)
         {
-
-
             var gameDeck = await GetGameDeck(gameDeckId);
             if (gameDeck == null)
             {
@@ -119,8 +95,8 @@ namespace DeckGameApi.Infrastrucutre.Persistence.Repositories
 
             gameDeck.Decks.Add(deck);
             await _context.SaveChangesAsync();
+            _logger.LogInformation("Deck {deckId} added to game {id}", deck.Id, gameDeck.Id);
             return gameDeck;
-
         }
 
         public async Task<GameDeck> AddPlayerToGame(int playerId, int gameDeckId)
@@ -142,6 +118,8 @@ namespace DeckGameApi.Infrastrucutre.Persistence.Repositories
 
             gameDeck.Players.Add(player);
             await _context.SaveChangesAsync();
+            _logger.LogInformation("Player {playerId} added to game {gameDeckId}", player.Id, gameDeck.Id);
+
             return gameDeck;
 
         }
@@ -162,6 +140,8 @@ namespace DeckGameApi.Infrastrucutre.Persistence.Repositories
             }
             gameDeck.Players.Remove(gameDeck.Players.First(y => y.Id == playerId));
             await _context.SaveChangesAsync();
+            _logger.LogInformation("Player {playerId} removed to game {gameDeckId}", playerId, gameDeck.Id);
+
             return gameDeck;
         }
 
@@ -192,23 +172,18 @@ namespace DeckGameApi.Infrastrucutre.Persistence.Repositories
 
         public async Task<GameDeck> GetGameDeck(int id)
         {
-
-
             return await _context.GameDecks.Include(d => d.Decks)
                                            .ThenInclude(c => c.Cards)
                                            .Include(p => p.Players)
                                            .ThenInclude(p => p.Hand)
                                            .ThenInclude(h => h.Cards)
                                            .FirstOrDefaultAsync(x => x.Id == id);
-
-
         }
 
         public async Task<Deck> GetDeck(int id)
         {
             return await _context.Decks.Include(c => c.Cards)
                                        .FirstOrDefaultAsync(x => x.Id == id);
-
         }
         public async Task<Player> GetPlayer(int id)
         {
@@ -217,13 +192,10 @@ namespace DeckGameApi.Infrastrucutre.Persistence.Repositories
             return await _context.Players.Include(h => h.Hand)
                                          .ThenInclude(c => c.Cards)
                                          .FirstOrDefaultAsync(x => x.Id == id);
-
-
         }
 
         public async Task<List<Card>> GetPlayerCards(int id)
         {
-
             var player = await GetPlayer(id);
 
             if (player == null)
@@ -233,7 +205,6 @@ namespace DeckGameApi.Infrastrucutre.Persistence.Repositories
             }
 
             return player.Hand.Cards;
-
         }
     }
 }

@@ -3,7 +3,7 @@
 namespace DeckGameApi.DeckGame.DTO
 {
     public class CardCollectionDto
-    {     
+    {
         public List<SuitDTO> Suits { get; set; }
 
         public CardCollectionDto(List<Card> cards)

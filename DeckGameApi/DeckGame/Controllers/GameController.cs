@@ -26,6 +26,7 @@ namespace DeckGameApi.DeckGame.Controllers
         public async Task<IActionResult> CreateGame()
         {
             var entity = await _deckGameRepository.CreateGame();
+            _logger.Log("Game created with ID:{id}", entity.Id);
             return CreatedAtAction(nameof(GetGameDeck), new { id = entity.Id }, entity);
         }
 

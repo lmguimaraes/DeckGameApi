@@ -57,7 +57,7 @@ namespace DeckGameApi.Domain.Entities
 
             return takeCards;
         }
-        
+
         public Dictionary<Suit, int> CountCardsBySuite()
         {
             return Cards.GroupBy(c => c.Suit)

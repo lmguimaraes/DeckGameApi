@@ -1,14 +1,20 @@
 ﻿using DeckGameApi.Domain.Entities;
 using DeckGameApi.Domain.Entities.Enums;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Console;
 
 namespace DeckGameApi.Infrastrucutre.Persistence
 {
     public class DeckGameDbContext : DbContext
     {
-        public DeckGameDbContext(DbContextOptions<DeckGameDbContext> options)
+        private readonly ILogger<DeckGameDbContext> _logger;
+        public DeckGameDbContext(DbContextOptions<DeckGameDbContext> options,
+                                 ILoggerFactory loggerFactory)
                 : base(options)
-        { }
+        {
+            _logger = loggerFactory.CreateLogger<DeckGameDbContext>();
+        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -17,6 +23,7 @@ namespace DeckGameApi.Infrastrucutre.Persistence
             modelBuilder.Entity<Player>().HasOne(p => p.Hand);
             modelBuilder.Entity<Hand>().HasMany(c => c.Cards);
             modelBuilder.Entity<Deck>().HasMany(c => c.Cards);
+            _logger.LogInformation("DeckGameDbContext.OnModelCreating method was called.");
         }
 
 
