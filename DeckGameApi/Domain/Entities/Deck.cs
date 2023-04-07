@@ -1,30 +1,26 @@
-﻿using DeckGameApi.Core.Entities.Enums;
+﻿using DeckGameApi.Domain.Entities.Enums;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace DeckGameApi.Core.Entities
+namespace DeckGameApi.Domain.Entities
 {
     public class Deck
     {
         [Key]
         public int Id { get; set; }
         [ForeignKey("GameDeck")]
-        public int GameDeckId { get; set; }
-        public Deck() => Reset();
-        public bool IsInPlay = false;
-
+        public int? GameDeckId { get; set; }
         public List<Card> Cards { get; set; }
-
-        public void Reset()
+        public Deck(int id)
         {
-            Cards = Enumerable.Range(1, 4)
-                .SelectMany(s => Enumerable.Range(1, 13)
-                                    .Select(c => new Card()
-                                    {
-                                        Suit = (Suit)s,
-                                        CardNumber = (CardNumber)c
-                                    }))
-                .ToList();
+            Id = id;
+            Cards = new List<Card>();
+            foreach (Suit suit in Enum.GetValues(typeof(Suit)))
+            {
+                foreach (CardNumber cardNumber in Enum.GetValues(typeof(CardNumber)))
+                    Cards.Add(new Card { CardNumber = cardNumber, Suit = suit });
+            }
         }
 
         public void Shuffle()
@@ -60,6 +56,19 @@ namespace DeckGameApi.Core.Entities
             Cards.RemoveAll(takeCards.Contains);
 
             return takeCards;
+        }
+        
+        public Dictionary<Suit, int> CountCardsBySuite()
+        {
+            return Cards.GroupBy(c => c.Suit)
+                         .ToDictionary(g => g.Key, g => g.Count());
+        }
+
+        public List<Card> SortBySuiteAndValue()
+        {
+            return Cards.OrderBy(c => c.Suit)
+                        .ThenByDescending(c => c.CardNumber)
+                        .ToList();
         }
     }
 }

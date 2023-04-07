@@ -1,4 +1,4 @@
-﻿namespace DeckGameApi.Core.Entities.Enums
+﻿namespace DeckGameApi.Domain.Entities.Enums
 {
     public enum CardNumber
     {

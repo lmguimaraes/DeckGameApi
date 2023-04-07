@@ -1,10 +1,10 @@
-﻿namespace DeckGameApi.Core.Entities.Enums
+﻿namespace DeckGameApi.Domain.Entities.Enums
 {
     public enum Suit
     {
-        Club = 1,
-        Diamond = 2,
-        Heart = 3,
-        Spades = 4,
+        Hearts = 1,
+        Spades = 2,
+        Clubs = 3,
+        Diamonds = 4,
     }
 }

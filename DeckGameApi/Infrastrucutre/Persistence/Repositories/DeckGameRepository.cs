@@ -1,12 +1,15 @@
 ﻿using DeckGameApi.Common.Interfaces;
-using DeckGameApi.Core.Entities;
+using DeckGameApi.Domain.Entities;
+using DeckGameApi.Domain.Entities.Enums;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection.Emit;
 
 
 namespace DeckGameApi.Infrastrucutre.Persistence.Repositories
 {
     public class DeckGameRepository : IDeckGameRepository
     {
+        private static int DeckId = 1;
         private readonly DeckGameDbContext _context;
         private readonly ILogger<DeckGameRepository> _logger;
         public DeckGameRepository(DeckGameDbContext context,
@@ -16,50 +19,72 @@ namespace DeckGameApi.Infrastrucutre.Persistence.Repositories
             _logger = logger;
         }
 
-        public void AddDeckToGame()
-        {
-            throw new NotImplementedException();
-        }
 
         public async Task<Deck> CreateDeck()
         {
+            var deck = new Deck(DeckId);
+            _context.Decks.Add(deck);
+            await _context.SaveChangesAsync();
+            DeckId++;
+            return deck;
+        }
 
+        public async Task<Deck> ShuffleGameDeck(int deckId, int gameId)
+        {
+            //var gameDeck = await GetGameDeck(gameId);
+            //if (gameDeck == null)
+            //{
+            //    _logger.LogError("GameDeck not found");
+            //    return null;
+            //}
+
+            //var deck = gameDeck.Decks.FirstOrDefault(x => x.Id == deckId);
+
+            //if (deck == null)
+            //{
+            //    _logger.LogError("Deck not found");
+            //    return null;
+            //}
+            //deck.Shuffle();
+            //await _context.SaveChangesAsync();
+            var deck = await GetDeck(deckId);
+            if (deck is null)
             {
-                var deck = new Deck();
-                await _context.Decks.AddAsync(deck);
-                await _context.SaveChangesAsync();
-                return deck;
+                _logger.LogError("GameDeck not found");
+                return null;
             }
+            deck.Shuffle();
+            await _context.SaveChangesAsync();
 
+            return deck;
         }
 
         public async Task<GameDeck> CreateGame()
         {
 
-            {
-                var gameDeck = new GameDeck();
-                await _context.GameDecks.AddAsync(gameDeck);
-                await _context.SaveChangesAsync();
-                return gameDeck;
-            }
+
+            var gameDeck = new GameDeck();
+            await _context.GameDecks.AddAsync(gameDeck);
+            await _context.SaveChangesAsync();
+            return gameDeck;
+
 
         }
 
         public async Task<Player> CreatePlayer()
         {
 
-            {
-                var player = new Player();
-                await _context.Players.AddAsync(player);
-                await _context.SaveChangesAsync();
-                return player;
-            }
+
+            var player = new Player();
+            await _context.Players.AddAsync(player);
+            await _context.SaveChangesAsync();
+            return player;
+
 
         }
 
         public async Task DeleteGame(int id)
         {
-
             try
             {
                 var gameDeck = _context.GameDecks.Attach(new GameDeck { Id = id });
@@ -150,7 +175,7 @@ namespace DeckGameApi.Infrastrucutre.Persistence.Repositories
                 return null;
             }
             var player = gameDeck.Players.FirstOrDefault(x => x.Id == playerId);
-            if ( player is null)
+            if (player is null)
             {
                 _logger.LogError("Player not found");
                 return null;
@@ -160,24 +185,7 @@ namespace DeckGameApi.Infrastrucutre.Persistence.Repositories
                 _logger.LogError("No deck added to the this game");
                 return null;
             }
-            int cardsTaken = 0;
-            player.Cards = new List<Card>();
-
-            foreach (var deck in gameDeck.Decks)
-            {
-                if (deck.Cards.Count > 0)
-                {
-                    deck.Shuffle();
-                    var cardsToTake = Math.Min(numberOfCards - cardsTaken, deck.Cards.Count);
-                    player.Cards.AddRange(deck.TakeCards(numberOfCards));
-                    cardsTaken += cardsToTake;
-
-                    if (cardsTaken == numberOfCards)
-                    {
-                        break;
-                    }
-                }
-            }
+            gameDeck.GiveCardsToPlayer(player, numberOfCards);  
             await _context.SaveChangesAsync();
             return player;
         }
@@ -185,28 +193,46 @@ namespace DeckGameApi.Infrastrucutre.Persistence.Repositories
         public async Task<GameDeck> GetGameDeck(int id)
         {
 
-            {
-                return await _context.GameDecks.Include(d => d.Decks)
-                                              .Include(p => p.Players)
-                                              .FirstOrDefaultAsync(x => x.Id == id);
-            }
+
+            return await _context.GameDecks.Include(d => d.Decks)
+                                           .ThenInclude(c => c.Cards)
+                                           .Include(p => p.Players)
+                                           .ThenInclude(p => p.Hand)
+                                           .ThenInclude(h => h.Cards)
+                                           .FirstOrDefaultAsync(x => x.Id == id);
+
 
         }
 
         public async Task<Deck> GetDeck(int id)
         {
-
-            {
-                return await _context.Decks.FirstOrDefaultAsync(x => x.Id == id);
-            }
+            return await _context.Decks.Include(c => c.Cards)
+                                       .FirstOrDefaultAsync(x => x.Id == id);
 
         }
         public async Task<Player> GetPlayer(int id)
         {
 
+
+            return await _context.Players.Include(h => h.Hand)
+                                         .ThenInclude(c => c.Cards)
+                                         .FirstOrDefaultAsync(x => x.Id == id);
+
+
+        }
+
+        public async Task<List<Card>> GetPlayerCards(int id)
+        {
+
+            var player = await GetPlayer(id);
+
+            if (player == null)
             {
-                return await _context.Players.FirstOrDefaultAsync(x => x.Id == id);
+                _logger.LogError("Player not found");
+                return null;
             }
+
+            return player.Hand.Cards;
 
         }
     }

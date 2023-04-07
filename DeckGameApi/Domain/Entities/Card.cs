@@ -1,14 +1,15 @@
-﻿using DeckGameApi.Core.Entities.Enums;
+﻿using DeckGameApi.Domain.Entities.Enums;
 using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
 
-namespace DeckGameApi.Core.Entities
+namespace DeckGameApi.Domain.Entities
 {
-    [Keyless]
-    [NotMapped]
     public class Card
     {
+        [Key]
+        public int Id { get; set; }
         public Suit Suit { get; set; }
         public CardNumber CardNumber { get; set; }
     }
 }
+

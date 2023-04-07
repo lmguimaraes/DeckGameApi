@@ -1,5 +1,7 @@
 using DeckGameApi.Common.Interfaces;
-using DeckGameApi.Core.Entities;
+using DeckGameApi.DeckGame.DTO;
+using DeckGameApi.Domain.Entities;
+using DeckGameApi.Domain.Entities.Enums;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -27,19 +29,19 @@ namespace DeckGameApi.DeckGame.Controllers
             return CreatedAtAction(nameof(GetGameDeck), new { id = entity.Id }, entity);
         }
 
-        // DELETE /game/delete/{id}
-        [HttpDelete("delete/{id}")]
-        public async Task<IActionResult> DeleteGame(int id)
-        {
-            await _deckGameRepository.DeleteGame(id);
-            return NoContent();
-        }
-
         // POST /game/decks/create
         [HttpPost("decks/create")]
         public async Task<IActionResult> CreateDeck()
         {
             var entity = await _deckGameRepository.CreateDeck();
+            return CreatedAtAction(nameof(GetDeck), new { id = entity.Id }, entity);
+        }
+
+        // POST /game/decks/shuffle/{id}/{gameId}
+        [HttpPost("decks/shuffle/{deckId}/{gameId}")]
+        public async Task<IActionResult> ShuffleGameDeck(int deckId, int gameId)
+        {
+            var entity = await _deckGameRepository.ShuffleGameDeck(deckId, gameId);
             return CreatedAtAction(nameof(GetDeck), new { id = entity.Id }, entity);
         }
 
@@ -57,7 +59,7 @@ namespace DeckGameApi.DeckGame.Controllers
         public async Task<ActionResult<GameDeck>> GetGameDeck(int id)
         {
             var entity = await _deckGameRepository.GetGameDeck(id);
-            if(entity == null)
+            if (entity == null)
                 return BadRequest("Invalid ID");
             return Ok(entity);
         }
@@ -84,7 +86,65 @@ namespace DeckGameApi.DeckGame.Controllers
             return Ok(entity);
         }
 
-        // POST /game/decks/add/{id}/{gameId}
+        // GET /game/players/cards/{id}
+        [HttpGet]
+        [Route("players/cards/{id}")]
+        public async Task<ActionResult<GameDeck>> GetPlayerCards(int id)
+        {
+            var entity = await _deckGameRepository.GetPlayerCards(id);
+            if (entity == null)
+                return BadRequest("Invalid ID");
+            return Ok(entity);
+        }
+
+        //GET /game/{gameId}/players/sorted-by-hand-value"
+        [HttpGet]
+        [Route("{gameId}/players/sorted-by-hand-value")]
+        public ActionResult<List<PlayerHandValueDto>> GetPlayersSortedByHandValue(int gameId)
+        {
+            var gameDeck = _deckGameRepository.GetGameDeck(gameId);
+            if (gameDeck == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(gameDeck.Result.GetPlayersHandValues());
+        }
+
+        //GET /game/{gameId}/{deckId}/cards/count-by-suit"
+        [HttpGet]
+        [Route("game/{gameId}/{deckId}/cards/count-by-suit")]
+        public ActionResult<Dictionary<Suit, int>> GetCardsCountBySuit(int gameId, int deckId)
+        {
+            var gameDeck = _deckGameRepository.GetGameDeck(gameId);
+            if (gameDeck is null)
+            {
+                return NotFound();
+            }
+            var deck = gameDeck.Result.Decks.First(x => x.Id == deckId);
+            if (deck is null)
+                return NotFound();
+            return Ok(deck.CountCardsBySuite());
+        }
+        //GET /game/{gameId}/{deckId}/cards/count-by-suit-sorted-by-value"
+        [HttpGet]
+        [Route("game/{gameId}/{deckId}/cards/count-by-suit-sorted-by-value")]
+        public ActionResult<CardCollectionDto> GetCardsCountBySuitSortedByValue(int gameId, int deckId)
+        {
+            var gameDeck = _deckGameRepository.GetGameDeck(gameId);
+            if (gameDeck is null)
+            {
+                return NotFound();
+            }
+            var deck = gameDeck.Result.Decks.First(x => x.Id == deckId);
+            if (deck is null)
+                return NotFound();
+
+            return Ok(new CardCollectionDto(deck.Cards));
+
+        }
+
+        // POST /game/decks/add/{deckId}/{gameId}
         [HttpPost("decks/add/{deckId}/{gameId}")]
         public async Task<IActionResult> AddDeckToGame(int deckId, int gameId)
         {
@@ -92,11 +152,11 @@ namespace DeckGameApi.DeckGame.Controllers
             return CreatedAtAction(nameof(GetGameDeck), new { id = gameId }, entity);
         }
 
-        // POST /game/players/add/{gameId}
-        [HttpPost("players/add/{gameId}")]
+        // POST /game/players/add/{playerId}/{gameId}
+        [HttpPost("players/add/{playerId}/{gameId}")]
         public async Task<IActionResult> AddPlayerToGame(int playerId, int gameId)
         {
-            var entity = await _deckGameRepository.AddPlayerToGame(gameId);
+            var entity = await _deckGameRepository.AddPlayerToGame(playerId, gameId);
             return CreatedAtAction(nameof(GetGameDeck), new { id = gameId }, entity);
         }
 
@@ -108,12 +168,21 @@ namespace DeckGameApi.DeckGame.Controllers
             return CreatedAtAction(nameof(GetGameDeck), new { id = gameId }, entity);
         }
 
-        // POST /game/players/deal/{playerId}
-        [HttpPost("players/deal/{gameDeckId}/{playerId}/{numberOfCards}")]
+        // POST /game/players/deal/{playerId/{playerId}/{numberOfCards}
+        [HttpPost("players/deal/{gameId}/{playerId}/{numberOfCards}")]
         public async Task<IActionResult> DealCardsToPlayer(int gameId, int playerId, int numberOfCards)
         {
             var entity = await _deckGameRepository.DealCardsToPlayer(gameId, playerId, numberOfCards);
             return CreatedAtAction(nameof(GetPlayer), new { id = playerId }, entity);
         }
+
+        // DELETE /game/delete/{id}
+        [HttpDelete("delete/{id}")]
+        public async Task<IActionResult> DeleteGame(int id)
+        {
+            await _deckGameRepository.DeleteGame(id);
+            return NoContent();
+        }
+
     }
 }
